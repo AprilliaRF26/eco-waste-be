@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model user {
+  id        String    @id @default(uuid())
+  username  String    @unique
+  password  String
+  role      user_role
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  nasabah   nasabah?
+  adminbank adminbank?
+}
+
+model nasabah {
+  id           String   @id @default(uuid())
+  userId       String   @unique(map: "Nasabah_userId_key")
+  namaNasabah  String
+  alamat       String
+  telp         String
+  tanggalLahir DateTime?
+  saldoPoin    Int      @default(0)
+  foto         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          user             @relation(fields: [userId], references: [id], map: "Nasabah_userId_fkey")
+  setorsampah   setorsampah[]
+  penukaranpoin penukaranpoin[]
+}
+
+model adminbank {
+  id            String   @id @default(uuid())
+  userId        String   @unique(map: "AdminBank_userId_key")
+  namaUnit      String
+  namaPengelola String
+  telp          String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user user @relation(fields: [userId], references: [id], map: "AdminBank_userId_fkey")
+}
+
+model kategorisampah {
+  id           String               @id @default(uuid())
+  namaKategori String
+  hargaPerKg   Int
+  poinPerKg    Int
+  jenis        kategorisampah_jenis
+  foto         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  detailsetor detailsetor[]
+}
+
+model setorsampah {
+  id           String             @id @default(uuid())
+  kodeSetor    String             @unique
+  nasabahId    String
+  tanggal      DateTime
+  status       setorsampah_status @default(menunggu_konfirmasi)
+  totalBeratKg Float              @default(0)
+  totalPoin    Int                @default(0)
+  catatan      String?
+  catatanAdmin String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nasabah     nasabah       @relation(fields: [nasabahId], references: [id], map: "SetorSampah_nasabahId_fkey")
+  detailsetor detailsetor[]
+
+  @@index([nasabahId], map: "SetorSampah_nasabahId_fkey")
+}
+
+model detailsetor {
+  id               String @id @default(uuid())
+  setorSampahId    String
+  kategoriSampahId String
+  beratKg          Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  setorsampah    setorsampah    @relation(fields: [setorSampahId], references: [id], map: "DetailSetor_setorSampahId_fkey")
+  kategorisampah kategorisampah @relation(fields: [kategoriSampahId], references: [id], map: "DetailSetor_kategoriSampahId_fkey")
+
+  @@index([setorSampahId], map: "DetailSetor_setorSampahId_fkey")
+  @@index([kategoriSampahId], map: "DetailSetor_kategoriSampahId_fkey")
+}
+
+model hadiah {
+  id             String   @id @default(uuid())
+  namaHadiah     String
+  poinDibutuhkan Int
+  stok           Int
+  foto           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  penukaranpoin penukaranpoin[]
+}
+
+model penukaranpoin {
+  id            String               @id @default(uuid())
+  kodePenukaran String               @unique
+  nasabahId     String
+  hadiahId      String
+  poin          Int
+  status        penukaranpoin_status @default(diproses)
+  catatan       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nasabah nasabah @relation(fields: [nasabahId], references: [id], map: "PenukaranPoin_nasabahId_fkey")
+  hadiah  hadiah  @relation(fields: [hadiahId], references: [id], map: "PenukaranPoin_hadiahId_fkey")
+
+  @@index([nasabahId], map: "PenukaranPoin_nasabahId_fkey")
+  @@index([hadiahId], map: "PenukaranPoin_hadiahId_fkey")
+}
+
+enum user_role {
+  ADMIN
+  NASABAH
+}
+
+enum kategorisampah_jenis {
+  plastik
+  kertas
+  logam
+  kaca
+}
+
+enum setorsampah_status {
+  menunggu_konfirmasi
+  diverifikasi
+  ditolak
+  selesai
+}
+
+enum penukaranpoin_status {
+  diproses
+  selesai
+  dibatalkan
+}
